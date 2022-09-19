@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.Diagnostics;
+
 namespace Sharpcash.Helpers;
 
 internal static class BuffersHelper
@@ -12,5 +15,19 @@ internal static class BuffersHelper
         }
 
         return index + 1;
+    }
+
+    public static int GetBase64(long value, Span<char> destination)
+    {
+        Span<byte> valueBytes = stackalloc byte[sizeof(long)];
+        BinaryPrimitives.WriteInt64LittleEndian(valueBytes, value);
+
+        var trimmedLength = TrimZeroPadding(valueBytes);
+        valueBytes = valueBytes[..trimmedLength];
+
+        var success = Convert.TryToBase64Chars(valueBytes, destination, out var charsWritten);
+        Debug.Assert(success);
+
+        return charsWritten;
     }
 }
