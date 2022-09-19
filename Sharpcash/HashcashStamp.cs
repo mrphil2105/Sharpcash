@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.Text;
+using Sharpcash.Helpers;
+
 namespace Sharpcash;
 
 public class HashcashStamp
@@ -39,4 +43,44 @@ public class HashcashStamp
     public string Random { get; }
 
     public long Counter { get; }
+
+    public bool TryFormat(Span<char> destination, out int charsWritten)
+    {
+        var length = this.GetLength();
+
+        if (destination.Length < length)
+        {
+            charsWritten = 0;
+
+            return false;
+        }
+
+        Span<char> dateChars = stackalloc char[6];
+        Date.TryFormat(dateChars, out _, StampConstants.DateFormat);
+
+        Span<char> counterBase64 = stackalloc char[StampConstants.MaxCounterLength];
+        var counterBase64Length = BuffersHelper.GetBase64(Counter, counterBase64);
+        counterBase64 = counterBase64[..counterBase64Length];
+
+        var builder = new StringBuilder(length);
+        builder.Append(Version);
+        builder.Append(':');
+        builder.Append(Bits);
+        builder.Append(':');
+        builder.Append(dateChars);
+        builder.Append(':');
+        builder.Append(Resource);
+        builder.Append(':');
+        builder.Append(':');
+        builder.Append(Random);
+        builder.Append(':');
+        builder.Append(counterBase64);
+
+        Debug.Assert(builder.Length == length);
+
+        builder.CopyTo(0, destination, length);
+        charsWritten = length;
+
+        return true;
+    }
 }
