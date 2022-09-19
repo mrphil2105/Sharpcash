@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 using Sharpcash.Helpers;
@@ -82,5 +83,16 @@ public class HashcashStamp
         charsWritten = length;
 
         return true;
+    }
+
+    public override string ToString()
+    {
+        var length = this.GetLength();
+        using var memoryOwner = MemoryPool<char>.Shared.Rent(length);
+        var stampChars = memoryOwner.Memory.Span[..length];
+
+        TryFormat(stampChars, out _);
+
+        return new string(stampChars);
     }
 }
