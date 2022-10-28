@@ -20,4 +20,15 @@ public static class StampExtensions
 
         return StampConstants.BasicLength + stamp.Resource.Length + stamp.Random.Length + counterLength;
     }
+
+    public static int GetMaxLength(this HashcashStamp stamp)
+    {
+        if (stamp is null)
+        {
+            throw new ArgumentNullException(nameof(stamp));
+        }
+
+        return StampConstants.BasicLength + stamp.Resource.Length + stamp.Random.Length +
+            StampConstants.MaxCounterLength;
+    }
 }
