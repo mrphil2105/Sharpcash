@@ -1,0 +1,92 @@
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Sharpcash.UnitTests;
+
+public class HashcashStampTests
+{
+    private static readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+
+    [Theory]
+    [HashcashData]
+    public async Task MintAsync_CreatesZeroBits_SingleThreaded(HashcashStamp stamp)
+    {
+        var bytesToCheck = stamp.Bits / 8;
+        var remainderBits = stamp.Bits % 8;
+        var remainderMask = (byte)(0xFF << (8 - remainderBits));
+
+        var mintedStamp = await stamp.MintAsync(_hashAlgorithm);
+
+        using var hasher = HashAlgorithm.Create(_hashAlgorithm.Name!);
+        var stampString = mintedStamp.ToString();
+        var stampBytes = Encoding.UTF8.GetBytes(stampString);
+        var hash = hasher!.ComputeHash(stampBytes);
+
+        hash.Take(bytesToCheck)
+            .Should()
+            .OnlyContain(b => b == 0);
+        (hash[bytesToCheck] & remainderMask).Should()
+            .Be(0);
+    }
+
+    [Theory]
+    [HashcashData]
+    public async Task MintAsync_MintsStamp_SingleThreaded(HashcashStamp stamp)
+    {
+        var mintedStamp = await stamp.MintAsync(_hashAlgorithm);
+
+        var isValid = mintedStamp.Verify(_hashAlgorithm);
+        isValid.Should()
+            .BeTrue();
+    }
+
+    [Theory]
+    [HashcashData]
+    public async Task MintAsync_MintsStamp_MultiThreaded(HashcashStamp stamp)
+    {
+        var mintedStamp = await stamp.MintAsync(_hashAlgorithm, Environment.ProcessorCount);
+
+        var isValid = mintedStamp.Verify(_hashAlgorithm);
+        isValid.Should()
+            .BeTrue();
+    }
+
+    [Theory]
+    [HashcashData]
+    public void ToString_ReturnsStampString_GivenDetails(HashcashStamp stamp)
+    {
+        var dateString = stamp.Date.ToString(StampConstants.DateFormat);
+        var counterChars = new char[StampConstants.MaxCounterLength];
+        var base64Length = BuffersHelper.GetBase64(stamp.Counter, counterChars);
+        var counterBase64 = new string(counterChars[..base64Length]);
+        var expected = $"{stamp.Version}:{stamp.Bits}:{dateString}:{stamp.Resource}::{stamp.Random}:{counterBase64}";
+
+        var actual = stamp.ToString();
+
+        actual.Should()
+            .Be(expected);
+    }
+
+    [Theory]
+    [HashcashData]
+    public void Parse_ReturnsStamp_GivenValidStampString(HashcashStamp stamp)
+    {
+        var stampString = stamp.ToString();
+
+        var otherStamp = HashcashStamp.Parse(stampString);
+
+        otherStamp.Should()
+            .BeEquivalentTo(stamp);
+    }
+
+    [Theory]
+    [HashcashData]
+    public void Parse_ThrowsArgumentException_GivenInvalidStampString(string invalid)
+    {
+        Action act = () => HashcashStamp.Parse(invalid);
+
+        act.Should()
+            .Throw<ArgumentException>()
+            .Where(e => e.Message.StartsWith("The specified hashcash stamp is invalid."));
+    }
+}
