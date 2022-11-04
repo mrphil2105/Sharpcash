@@ -6,7 +6,7 @@ using Sharpcash.Helpers;
 
 namespace Sharpcash;
 
-public class HashcashStamp
+public partial class HashcashStamp
 {
     public HashcashStamp(int bits, DateTime date, string resource, string random = "", long counter = 0)
     {
