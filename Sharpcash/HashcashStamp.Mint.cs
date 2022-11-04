@@ -90,6 +90,27 @@ public partial class HashcashStamp
         }
     }
 
+    public bool Verify(HashAlgorithmName hashAlgorithm)
+    {
+        using (SerializeToUtf8Bytes(out var stampBytes))
+        {
+            using var hasher = HashAlgorithm.Create(hashAlgorithm.Name);
+
+            if (hasher == null)
+            {
+                throw new CryptographicException("Unable to create an instance of the specified hash algorithm.");
+            }
+
+            Span<byte> hash = stackalloc byte[hasher.HashSize / 8];
+            var validator = new StampValidator(Bits, hasher, hash);
+
+            var trimmedLength = BuffersHelper.TrimZeroPadding(stampBytes);
+            stampBytes = stampBytes[..trimmedLength];
+
+            return validator.VerifyOnce(stampBytes);
+        }
+    }
+
     private IDisposable SerializeToUtf8Bytes(out Span<byte> stampBytes)
     {
         var maxLength = this.GetMaxLength();
