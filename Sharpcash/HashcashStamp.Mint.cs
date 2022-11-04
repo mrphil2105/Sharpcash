@@ -9,6 +9,43 @@ namespace Sharpcash;
 
 public partial class HashcashStamp
 {
+    public HashcashStamp Mint(HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return MintCore(hashAlgorithm, 0, 1, cancellationToken);
+    }
+
+    public Task<HashcashStamp> MintAsync(HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.Factory.StartNew(() => MintCore(hashAlgorithm, 0, 1, cancellationToken), cancellationToken,
+            TaskCreationOptions.LongRunning, TaskScheduler.Default);
+    }
+
+    public async Task<HashcashStamp> MintAsync(HashAlgorithmName hashAlgorithm, int threadCount,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var localCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var tasks = new List<Task<HashcashStamp>>(threadCount);
+
+        for (var i = 0; i < threadCount; i++)
+        {
+            var offset = i;
+            var task = Task.Factory.StartNew(() => MintCore(hashAlgorithm, offset, threadCount, localCts.Token),
+                localCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            tasks.Add(task);
+        }
+
+        var completedTask = await Task.WhenAny(tasks);
+        localCts.Cancel();
+
+        return await completedTask;
+    }
+
     private HashcashStamp MintCore(HashAlgorithmName hashAlgorithm, int offset, int increment,
         CancellationToken cancellationToken)
     {
