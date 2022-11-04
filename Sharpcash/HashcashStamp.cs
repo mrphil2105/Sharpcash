@@ -111,19 +111,18 @@ public partial class HashcashStamp
         var counterBase64Length = BuffersHelper.GetBase64(Counter, counterBase64);
         counterBase64 = counterBase64[..counterBase64Length];
 
-        var builder = new StringBuilder(length);
-        builder.Append(Version);
-        builder.Append(':');
-        builder.Append(Bits);
-        builder.Append(':');
-        builder.Append(dateChars);
-        builder.Append(':');
-        builder.Append(Resource);
-        builder.Append(':');
-        builder.Append(':');
-        builder.Append(Random);
-        builder.Append(':');
-        builder.Append(counterBase64);
+        var builder = new StringBuilder(length).Append(Version)
+            .Append(':')
+            .Append(Bits)
+            .Append(':')
+            .Append(dateChars)
+            .Append(':')
+            .Append(Resource)
+            .Append(':')
+            .Append(':')
+            .Append(Random)
+            .Append(':')
+            .Append(counterBase64);
 
         Debug.Assert(builder.Length == length);
 
