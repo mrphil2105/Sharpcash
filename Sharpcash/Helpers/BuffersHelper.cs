@@ -29,4 +29,17 @@ internal static class BuffersHelper
 
         return charsWritten;
     }
+
+    public static long GetInt64(ReadOnlySpan<char> base64)
+    {
+        Span<byte> valueBytes = stackalloc byte[sizeof(long)];
+
+        if (Convert.TryFromBase64Chars(base64, valueBytes, out _))
+        {
+            return BinaryPrimitives.ReadInt64LittleEndian(valueBytes);
+        }
+
+        throw new ArgumentException("The destination buffer contains invalid base-64 characters or is too long.",
+            nameof(base64));
+    }
 }

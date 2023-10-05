@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Sharpcash.Helpers;
 
@@ -53,6 +54,38 @@ public class HashcashStamp
     public string Random { get; }
 
     public long Counter { get; }
+
+    public static HashcashStamp Parse(ReadOnlySpan<char> stampChars)
+    {
+        if (!TryParse(stampChars, out var stamp))
+        {
+            throw new ArgumentException("The specified hashcash stamp string is invalid.", nameof(stampChars));
+        }
+
+        return stamp;
+    }
+
+    public static bool TryParse(ReadOnlySpan<char> stampChars, [NotNullWhen(true)] out HashcashStamp? stamp)
+    {
+        if (!StampHelper.VerifyStampString(stampChars))
+        {
+            stamp = null;
+
+            return false;
+        }
+
+        var index = 0;
+
+        var bits = StampHelper.ParseBits(stampChars, ref index);
+        var date = StampHelper.ParseDate(stampChars, ref index);
+        var resourceChars = StampHelper.ParseResource(stampChars, ref index, out var resourceLength);
+        var randomChars = StampHelper.ParseRandom(stampChars, resourceLength, ref index, out var randomLength);
+        var counter = StampHelper.ParseCounter(stampChars, randomLength, ref index);
+
+        stamp = new HashcashStamp(bits, date, new string(resourceChars), new string(randomChars), counter);
+
+        return true;
+    }
 
     public bool TryFormat(Span<char> destination, out int charsWritten)
     {

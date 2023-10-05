@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Sharpcash;
 
 internal static class StampConstants
@@ -14,4 +16,9 @@ internal static class StampConstants
     public const int MaxCounterLength = 12;
 
     public const string DateFormat = "yyMMdd";
+
+    public const string StampStringPattern =
+        @"^\d:\d{2}:\d{6}:[^:]*::[^:]*:(?=.{0,12}$)(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$";
+
+    public static readonly IFormatProvider DateFormatProvider = CultureInfo.GetCultureInfo("en-US");
 }
