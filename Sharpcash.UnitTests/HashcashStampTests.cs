@@ -16,4 +16,26 @@ public class HashcashStampTests
 
         actual.Should().Be(expected);
     }
+
+    [Theory]
+    [HashcashData]
+    public void Parse_ReturnsStamp_GivenValidStampString(HashcashStamp stamp)
+    {
+        var stampString = stamp.ToString();
+
+        var otherStamp = HashcashStamp.Parse(stampString);
+
+        otherStamp.Should().BeEquivalentTo(stamp);
+    }
+
+    [Theory]
+    [AutoData]
+    public void Parse_ThrowsArgumentException_GivenInvalidStampString(string invalid)
+    {
+        var act = () => HashcashStamp.Parse(invalid);
+
+        act.Should()
+            .Throw<ArgumentException>()
+            .Where(e => e.Message.StartsWith("The specified hashcash stamp string is invalid."));
+    }
 }
