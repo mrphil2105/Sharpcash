@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-
 namespace Sharpcash.Helpers;
 
 internal static class BuffersHelper

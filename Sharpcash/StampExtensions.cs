@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using Sharpcash.Helpers;
 
 namespace Sharpcash;
@@ -19,5 +18,15 @@ public static class StampExtensions
         counterLength = (int)Math.Ceiling(counterLength / 3.0) * 4;
 
         return BasicLength + stamp.Resource.Length + stamp.Random.Length + counterLength;
+    }
+
+    public static int GetMaxLength(this HashcashStamp stamp)
+    {
+        if (stamp is null)
+        {
+            throw new ArgumentNullException(nameof(stamp));
+        }
+
+        return BasicLength + stamp.Resource.Length + stamp.Random.Length + MaxCounterLength;
     }
 }
