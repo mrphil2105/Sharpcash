@@ -53,6 +53,60 @@ public class HashcashStamp
 
     public long Counter { get; }
 
+    public HashcashStamp Mint(HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var minter = new HashcashMinter(this, hashAlgorithm);
+
+        return minter.Mint(0, 1, cancellationToken);
+    }
+
+    public async Task<HashcashStamp> MintAsync(HashAlgorithmName hashAlgorithm,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var minter = new HashcashMinter(this, hashAlgorithm);
+
+        return await Task.Factory.StartNew(() => minter.Mint(0, 1, cancellationToken), cancellationToken,
+            TaskCreationOptions.LongRunning, TaskScheduler.Default);
+    }
+
+    public async Task<HashcashStamp> MintAsync(HashAlgorithmName hashAlgorithm, int threadCount,
+        CancellationToken cancellationToken = default)
+    {
+        if (threadCount < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(threadCount), "Value must be greater than 0.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var localCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var tasks = new List<Task<HashcashStamp>>(threadCount);
+
+        for (var i = 0; i < threadCount; i++)
+        {
+            var offset = i;
+            var minter = new HashcashMinter(this, hashAlgorithm);
+            var task = Task.Factory.StartNew(() => minter.Mint(offset, threadCount, localCts.Token), localCts.Token,
+                TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            #pragma warning disable CA2016
+            // ReSharper disable once MethodSupportsCancellation
+            _ = task.ContinueWith(_ => minter.Dispose(), TaskContinuationOptions.ExecuteSynchronously);
+            #pragma warning restore CA2016
+
+            tasks.Add(task);
+        }
+
+        var completedTask = await Task.WhenAny(tasks);
+        localCts.Cancel();
+
+        return await completedTask;
+    }
+
     public static HashcashStamp Parse(ReadOnlySpan<char> stampChars)
     {
         if (!TryParse(stampChars, out var stamp))
