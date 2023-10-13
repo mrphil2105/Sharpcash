@@ -107,6 +107,13 @@ public class HashcashStamp
         return await completedTask;
     }
 
+    public bool Verify(HashAlgorithmName hashAlgorithm)
+    {
+        using var minter = new HashcashMinter(this, hashAlgorithm);
+
+        return minter.Verify();
+    }
+
     public static HashcashStamp Parse(ReadOnlySpan<char> stampChars)
     {
         if (!TryParse(stampChars, out var stamp))

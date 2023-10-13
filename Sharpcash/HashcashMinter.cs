@@ -67,6 +67,20 @@ internal class HashcashMinter : IDisposable
         }
     }
 
+    public bool Verify()
+    {
+        var tuple = SerializeToUtf8Bytes();
+        var stampBytes = tuple.StampBytes.Span;
+
+        using (tuple.MemoryOwner)
+        {
+            var trimmedLength = BuffersHelper.TrimZeroPadding(stampBytes);
+            stampBytes = stampBytes[..trimmedLength];
+
+            return VerifyOnce(stampBytes);
+        }
+    }
+
     private bool VerifyOnce(ReadOnlySpan<byte> stampBytes)
     {
         var hash = _hash.Span;
