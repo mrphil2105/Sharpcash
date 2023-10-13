@@ -5,8 +5,6 @@ namespace Sharpcash;
 
 internal class HashcashMinter : IDisposable
 {
-    private readonly HashcashStamp _stamp;
-
     private readonly int _bytesToCheck;
     private readonly byte _remainderMask;
 
@@ -18,7 +16,7 @@ internal class HashcashMinter : IDisposable
         var remainderBits = stamp.Bits % 8;
         var hasher = CryptoHelper.CreateHashAlgorithm(hashAlgorithm);
 
-        _stamp = stamp;
+        Stamp = stamp;
 
         _bytesToCheck = stamp.Bits / 8;
         _remainderMask = (byte)(0xFF << (8 - remainderBits));
@@ -28,7 +26,9 @@ internal class HashcashMinter : IDisposable
         _hash = new byte[hasher.HashSize / 8];
     }
 
-    public HashcashStamp Mint(int offset, int increment, CancellationToken cancellationToken = default)
+    public HashcashStamp Stamp { get; set; }
+
+    public HashcashStamp Mint(long offset, long increment, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -40,7 +40,7 @@ internal class HashcashMinter : IDisposable
             var counterBase64Bytes = stampBytes.Slice(stampBytes.Length - MaxCounterLength, MaxCounterLength);
             var counterBytes = counterBase64Bytes[..sizeof(long)];
 
-            var counter = _stamp.Counter + offset;
+            var counter = Stamp.Counter + offset;
 
             while ((counter += increment) < long.MaxValue)
             {
@@ -53,10 +53,14 @@ internal class HashcashMinter : IDisposable
                 var trailingChars = MaxCounterLength - charsWritten;
                 var currentStampBytes = stampBytes[..^trailingChars];
 
-                if (VerifyOnce(currentStampBytes))
+                if (!VerifyOnce(currentStampBytes))
                 {
-                    return new HashcashStamp(_stamp.Bits, _stamp.Date, _stamp.Resource, _stamp.Random, counter);
+                    continue;
                 }
+
+                Stamp = new HashcashStamp(Stamp.Bits, Stamp.Date, Stamp.Resource, Stamp.Random, counter);
+
+                return Stamp;
             }
 
             throw new CryptographicException("A solution could not be found.");
@@ -81,10 +85,10 @@ internal class HashcashMinter : IDisposable
 
     private (IDisposable MemoryOwner, Memory<byte> StampBytes) SerializeToUtf8Bytes()
     {
-        var maxLength = _stamp.GetMaxLength();
+        var maxLength = Stamp.GetMaxLength();
         using var charsMemoryOwner = MemoryPool<char>.Shared.Rent(maxLength);
         var stampChars = charsMemoryOwner.Memory.Span[..maxLength];
-        _stamp.TryFormat(stampChars, out _);
+        Stamp.TryFormat(stampChars, out _);
 
         var byteCount = Encoding.UTF8.GetByteCount(stampChars);
         var bytesMemoryOwner = MemoryPool<byte>.Shared.Rent(byteCount);
