@@ -15,7 +15,9 @@ internal static class StampConstants
     public const int BasicLength = VersionLength + BitsLength + DateLength + ColonLength * ColonCount;
     public const int MaxCounterLength = 12;
 
-    public const string DateFormat = "yyMMdd";
+    public const string ShortDateFormat = "yyMMdd";
+    public const string MediumDateFormat = "yyMMddhhmm";
+    public const string LongDateFormat = "yyMMddhhmmss";
 
     public const string StampStringPattern =
         @"^\d:\d{2}:\d{6}:[^:]*::[^:]*:(?=.{0,12}$)(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$";

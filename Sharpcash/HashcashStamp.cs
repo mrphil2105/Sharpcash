@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.VisualBasic;
 using Sharpcash.Helpers;
 
 namespace Sharpcash;
@@ -146,7 +147,8 @@ public class HashcashStamp
         return true;
     }
 
-    public bool TryFormat(Span<char> destination, out int charsWritten)
+    public bool TryFormat(Span<char> destination, out int charsWritten,
+        StampDateFormat dateFormat = StampDateFormat.Medium)
     {
         var length = this.GetLength();
 
@@ -157,8 +159,9 @@ public class HashcashStamp
             return false;
         }
 
-        Span<char> dateChars = stackalloc char[6];
-        Date.TryFormat(dateChars, out _, DateFormat);
+        var dateFormatString = DateHelper.GetDateFormatString(dateFormat);
+        Span<char> dateChars = stackalloc char[dateFormatString.Length];
+        Date.TryFormat(dateChars, out _, dateFormatString);
 
         Span<char> counterBase64 = stackalloc char[MaxCounterLength];
         var counterBase64Length = BuffersHelper.GetBase64(Counter, counterBase64);

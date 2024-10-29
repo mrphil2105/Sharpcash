@@ -80,6 +80,20 @@ public class HashcashStampTests
 
         act.Should()
             .Throw<ArgumentException>()
-            .Where(e => e.Message.StartsWith("The specified hashcash stamp string is invalid."));
+            .WithMessage("The specified hashcash stamp string is invalid.");
+    }
+
+    [Fact]
+    public void FooTest()
+    {
+        var bytes = new byte[20];
+        var foo = Convert.TryFromBase64String("ePa=", bytes, out var written);
+
+        // var stamp = HashcashStamp.Parse("1:20:1303030600:anni@cypherspace.org::McMybZIhxKXu57jd:ckvi");
+        var stamp = HashcashStamp.Parse("1:20:060408:anni@cypherspace.org::1QTjaYd7niiQA/sc:ePa");
+
+        var isValid = stamp.Verify(HashAlgorithmName.SHA1);
+
+        isValid.Should().BeTrue();
     }
 }
